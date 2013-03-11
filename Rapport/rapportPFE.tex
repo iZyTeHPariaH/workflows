@@ -1,0 +1,62 @@
+\documentclass{report}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[cyr]{aeguill}
+\usepackage[french]{babel}
+\usepackage{listings}
+\usepackage{color}
+
+\title{D'une méthode exacte pour l'ordonnancement de Workflows}
+
+
+\begin{document}
+\maketitle
+\chapter*{Introduction}
+\tableofcontents
+
+\chapter{Modélisation du problème}
+\section{Données du problème et notations adoptées.}
+Un workflow est représenté par la donnée de différents paramètres :
+\begin{itemize}
+  \item $n$ tâches représentées par un ensemble $T=\{t_1,...,t_n\}$
+  \item $m$ machines (ou ressources) représentées par un ensemble $M=\{M_1,...,M_m\}$
+  \item La durée d'execution de la tâche $i$ sur la machine $k$, notée $d^i_k, \forall i \in T, k \in M$
+  \item La durée de transfert de la sortie générée par la tâche $i$ de la machine $k$ à la machine $l$, notée $D^i_{k,l}, \forall i \in T, (k,l) \in M^2$
+  \item La donnée d'un graphe $G=(X,U)$ où les sommets sont des tâches et un arc $(i,j)$ modélise que la tâche $j$ nécessite la sortie de la tâche $i$.
+\end{itemize}
+\section{Modèle en nombres entiers}
+  \subsection{Variables}
+  Nous considérons trois types de variables :
+\begin{itemize}
+  \item Les variables $\forall i \in T, x^i$ définies par 
+    $$
+    x^i = \left\{\begin{array}{ll} 0 & \text{i \;n'est\;pas\;sur\;m}\\
+                                   > 0 & \text{sinon} \end{array}\right.
+    $$
+  \item Les variables $\forall i \in T, \forall k \in M, y^i_k$ définies par 
+    $$
+    y^i_k = \left\{\begin{array}{ll}1 & \text{si\;i\;est\;executee\;sur\;k} \\
+                                   0 & sinon\end{array}\right.
+    $$
+  \item Les variables $\forall (i,j) \in T^2, \forall (k,l) \in M^2,z^i_{k,l}$
+    $$
+    z^{i,j}_{k,l} = \left\{\begin{array}{ll}1 & \text{si\;la\;sortie\;de\;la\;tâche\;i\;passe\;de\;la\;machine\;k\;a\;la\;machine\;l\;pour\;la\;tache\;j\\
+          0 & sinon\end{array}\right.
+    $$
+\end{itemize}
+  \subsection{Contraintes}
+  Nous distinguons trois grandes familles de contraintes : les contraintes de précédences, les contraintes d'executions par machine et les contraintes de liaisons entre les variables.
+  \subsubsection{Contraintes de précédences}
+  Pour tout arc $(i,j) \in U$, nous imposons que la tâche $j$ ne puisse commencer avant la tâche $i$, c'est à dire avant qu'elle ne soit executée et que la sortie n'ait étée transférée :
+  $$
+  \sum_{k\in M}x^i_k + \sum_{k \in M}y^i_kd^i_k + \sum_{k\in M}\sum_{l \in M}z^{i,j}_{k,l}D^i_{k,l} \le \sum_{k\in M}x^j_k
+  $$
+  \subsubsection{Contraintes d'exécution par machines}
+
+  \subsubsection{Contraintes de liaisons}
+\section{Estimation du nombre de contraintes}
+
+\chapter{Génération des points non dominés}
+\chapter{Remarques et commentaires}
+\chapter{Conclusion}
+\end{document}
