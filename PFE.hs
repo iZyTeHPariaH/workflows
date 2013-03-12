@@ -201,8 +201,9 @@ buildWF appliAppli ressRess appliRessTime ressRessCost appliRessCost n m = do
     return $ Workflow taches' gr art outputs arc outputsCosts
 
 test = do 
-  wf <- (buildWF "heft3/aa.txt" "heft3/rr.txt" "heft3/art.txt" "heft3/rrc.txt" "heft3/arc.txt" 10 3)
+  wf <- (buildWF "random/aa.txt" "random/rr.txt" "random/art.txt" "random/rrc.txt" "random/arc.txt" 10 3)
   (ans,_) <- runVSupplyT $ runLPT $ lokKok (lp wf) 2
+  putStrLn "Cost\t\t Makespan"
   putStrLn $ unlines $ map (show.A.elems) (elems ans)
 showMatrix m = let (_,(n,p)) = A.bounds m in
   unlines $ map (\l -> unwords $ [show $ m A.! (l,j) | j <- [1..p]]) [1..n]
