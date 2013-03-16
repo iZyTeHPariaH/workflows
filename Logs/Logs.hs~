@@ -1,0 +1,15 @@
+{-#LANGUAGE OverloadedStrings #-}
+module Logs.Logs where
+
+import Control.Monad.Writer
+import Text.LaTeX
+import Text.LaTeX.Packages.Inputenc
+ 
+test2 :: LaTeX
+test2 = documentclass [] article <> 
+        usepackage [utf8] inputenc <>
+        title ("Résultats de l'optimisation") <>
+        document( section "Résultats" <> tabular Nothing [LeftColumn, LeftColumn] ("n" & 2) )
+
+test :: LaTeX
+test = "e" & 3

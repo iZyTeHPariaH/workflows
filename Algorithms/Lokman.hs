@@ -1,5 +1,7 @@
+{-# LANGUAGE OverloadedStrings #-}
 module Algorithms.Lokman where
 
+import Logs.Logs
 import Control.Monad
 import Control.Monad.Writer
 import Control.Applicative hiding (empty)
@@ -17,7 +19,7 @@ import Data.List hiding (insert)
 import Data.LinearProgram.Common
 import Data.LinearProgram.GLPK.Solver
 
-
+import Text.LaTeX hiding (empty)
 
 import Debug.Trace
 
@@ -63,7 +65,7 @@ buildB sn p k snk  = let b' = map (\(i,ki) -> if ki == 0 then -infty else fk+ sn
 -- Resoud le probleme P^b.
 getNewPoint :: [Var] ->
                [Double] ->
-               LPT Var Double (VSupplyT IO) (Maybe [Double])
+               LPT Var Double (VSupplyT (WriterT LaTeX IO)) (Maybe [Double])
 getNewPoint objs b = do                       
   s <- get
   foldM (\_ (ck,bk) -> varSum [ck] `geqTo` bk) () $ zip objs b
@@ -96,28 +98,42 @@ lokKok' objs arch sn p n = let kset = buildK sn (p - 2)
                                                    zb <- if Data.List.null b' && Data.List.null b'' 
                                                          then do 
                                                            ans <-  getNewPoint objs b
+                                                           lift $ tell $ latexDumpSubModelresult n b True $ if isJust ans then fromJust ans else []
                                                            trace (dumpSubModelResult n b True $ if isJust ans then fromJust ans else []) return ans
                                                          else if Data.List.null b'
-                                                              then trace (dumpSubModelResult n b False "Useless to solve.") $ return $  head b''
-                                                              else trace (dumpSubModelResult n b False "Infeasible submodel." ) $ return $ Nothing
+                                                              then do 
+                                                                lift $ tell $latexDumpSubModelresult n b False []
+                                                                trace (dumpSubModelResult n b False "Useless to solve.") $ return $  head b''
+                                                              else do 
+                                                                lift $ tell $ latexDumpSubModelresult n b False []
+                                                                trace (dumpSubModelResult n b False "Infeasible" ) $ return $ Nothing
                                                    return ((zb,b):l)) [] bset
                              let ans = [A.array (1,p) $ zip [1..] (fromJust zb) | (zb,_) <- archives, isJust zb]
                                  zstar = head $ sortBy (\x y -> compare (y A.! p) (x A.! p) ) ans
                                in if Data.List.null ans
                                   then trace ("No more poins found.") return sn
-                                  else trace (dumpModelResult n zstar) lokKok' objs (archives ++ arch) (Data.Map.Lazy.insert (n+1) zstar sn) p (n+1)
+                                  else do
+                                    lift $ tell $ latexDumpModelResult n zstar   
+                                    trace (dumpModelResult n zstar) lokKok' objs (archives ++ arch) (Data.Map.Lazy.insert (n+1) zstar sn) p (n+1)
                       
 lokKok domain p = do
   objs <- domain
-
+  
   x <- getNewPoint objs (repeat (-infty))
   case x of
     Nothing -> error "Empty ND set"
-    Just v -> trace ("model\tb\t\tsolve\t\tlocal ND point\t\tnew ND point\n" ++
-                     dumpSubModelResult 0 (take (fromIntegral $ p-1) (repeat $ -infty) ) True x ++ "\n" ++
-                     dumpModelResult 0 (A.array (1,p) $ zip [1..] v))
-              lokKok' objs [] (insert 1 (A.array (1,p) $ zip [1..] v) empty) p 1
+    Just v -> do 
+      lift $ tell $ textbf "model" & textbf "b" & textbf "solve?" & textbf "local ND point" & textbf "new ND point" <> lnbk <> hline <> lnbk
+      lift $ tell $ latexDumpSubModelresult  0 (take (fromIntegral $ p-1) (repeat $ -infty))  (True)  v
+      lift $ tell $ latexDumpModelResult 0 (A.array (1,p) $ zip [1..] v)
+      trace ("model\tb\t\tsolve\t\tlocal ND point\t\tnew ND point\n" ++
+             dumpSubModelResult 0 (take (fromIntegral $ p-1) (repeat $ -infty) ) True x ++ "\n" ++
+             dumpModelResult 0 (A.array (1,p) $ zip [1..] v))
+        lokKok' objs [] (insert 1 (A.array (1,p) $ zip [1..] v) empty) p 1
     
 
 dumpSubModelResult n b explorep zb = show n ++ "\t" ++ show b ++ "\t"  ++ show explorep ++ "\t" ++ show zb 
 dumpModelResult n ans = show n ++ "\t\t\t\t\t\t\t\t" ++ show (A.elems ans)
+
+latexDumpSubModelresult n b explorep zb = (fromString $ show n) & (vector b) & (fromString $ show explorep) & (vector zb) <> lnbk
+latexDumpModelResult n ans = fromString (show n) & "" & "" & "" & (vector $ A.elems ans) <> lnbk

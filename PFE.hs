@@ -1,19 +1,24 @@
 import Algorithms.Lokman hiding (infty)
+import Logs.Logs
 import Control.Monad
 import Data.Monoid
 import Control.Monad.Cont
 import Control.Monad.State
 import Control.Monad.Trans
+import Control.Monad.Writer
 import Control.Monad.LPMonad
 import Control.Monad.LPMonad.Supply
 import Data.Map.Lazy hiding (map,null,foldl,member)
 import Data.LinearProgram.Common
 import Data.Algebra
+import Data.List hiding (insert)
 import qualified Data.Array as A
 
 import Data.Maybe
 import Data.LinearProgram.GLPK.Solver
 import Debug.Trace
+
+import Text.LaTeX hiding (empty)
 
 trace' x = trace $ "[*] " ++ show x
 
@@ -167,7 +172,7 @@ getGraph matrix n m =
           
           
 
-buildWF appliAppli ressRess appliRessTime ressRessCost appliRessCost n m = do                                                                                                                                                                                    
+buildWF n m appliAppli ressRess appliRessTime ressRessCost appliRessCost = do                                                                                                                                                                                    
     aa <- (readMatrix appliAppli n n)
     rr <- readMatrix ressRess m m
     art <- readMatrix appliRessTime n m
@@ -200,11 +205,17 @@ buildWF appliAppli ressRess appliRessTime ressRessCost appliRessCost n m = do
  
     return $ Workflow taches' gr art outputs arc outputsCosts
 
-test = do 
-  wf <- (buildWF "random/aa.txt" "random/rr.txt" "random/art.txt" "random/rrc.txt" "random/arc.txt" 10 3)
-  (ans,_) <- runVSupplyT $ runLPT $ lokKok (lp wf) 2
+fnames = zipWith (++) ["aa","rr","art","rrc","arc"] $ repeat ".txt"
+apply5 f [a1,a2,a3,a4,a5] = f a1 a2 a3 a4 a5
+dumpAns ans = fromString "makespan" & fromString "cost" <> lnbk <> hline <>
+              intersperse hline (map (\l -> foldl1 (\a e -> a & e) l) ans)
+test dossier = do 
+  --wf <- (buildWF "random/aa.txt" "random/rr.txt" "random/art.txt" "random/rrc.txt" "random/arc.txt" 10 3)
+  wf <- apply5 (buildWF 10 3) (map (\name -> dossier++"/"++name) fnames)
+  ((ans,_),w) <- runWriterT $ runVSupplyT $ runLPT $ lokKok (lp wf) 2
   putStrLn "Cost\t\t Makespan"
   putStrLn $ unlines $ map (show.A.elems) (elems ans)
+  renderFile "report.tex" $ buildReport w (fromString "")
 showMatrix m = let (_,(n,p)) = A.bounds m in
   unlines $ map (\l -> unwords $ [show $ m A.! (l,j) | j <- [1..p]]) [1..n]
   
